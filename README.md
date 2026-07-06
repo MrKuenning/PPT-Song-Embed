@@ -1,41 +1,75 @@
 # Song Embed
 
-A Python and PyQt6 utility to automate the injection/embedding of lyric presentation slides and other slide content directly into a master PowerPoint slideshow presentation.
+A lightweight Windows utility to automate the injection/embedding of lyric presentation slides and other slide content directly into a master PowerPoint slideshow presentation. 
+
+Designed specifically to work seamlessly with **The Paperless Hymnal**, this tool allows you to quickly select songs, scan their slide structures, select specific verses, and construct your Sunday service slideshow on the fly.
+
+![alt text](Song_Embed_Window.png)
 
 ## Features
 
-- **Automated Embedding**: Instantly replaces slide contents inside targeted sections of an active presentation with slides from external files (e.g., song files in your library).
-- **One-Off Injection & Drag-and-Drop**: Directly inject any arbitrary `.ppt` or `.pptx` file (such as announcements, sermons, or lessons) into a selected section by dragging and dropping the file anywhere onto the application window, or by browsing for it manually.
-- **Keep Source Formatting**: Native copy/paste integration preserves layout, colors, and design styling of injected files.
-- **Section Management**: 
-  - List and view all sections inside your active presentation.
-  - Insert new sections, delete sections (along with their slides), or swap/reorder sections using **Move Up** and **Move Down**.
-  - Empty slides out of sections directly from the tool.
-- **Smart Song Detection**: Automatically reads slide text (skipping the initial blank slide in a section) to show you exactly which song/title is currently inside each section (highlighted by a `🎵` music note on song sections).
-- **Flexible Options**:
-  - Prepend a solid black slide before injected content automatically using the `Insert Blank slide` option.
-  - Toggle confirmation dialogs for quick embedding workflows using `Require Confirmation`.
-  - Toggle `Keep on top` to prevent the tool window from slipping behind PowerPoint during use.
-  - All options remember your last-used state automatically.
+- **Quick Song Search Index**: Instantly filter and select songs from your local song ppt library folder using a fast search bar.
+- **Song Verse Selection**: Scan songs to detect verse structure and choose specific verses to embed (including a persistent "First & Last" toggle for quick setup).
+- **Automated Embedding**: Replace section contents with slides from chosen songs automatically.
+- **One-Off PPT Embedding**: Support for injecting one-off slide files (e.g., sermon lessons, announcements) via file browser or direct drag-and-drop.
+- **Preserves Source Formatting**: Relies on PowerPoint's native copy-paste flow to preserve exact formatting, layouts, and background designs of the embedded slides.
+- **Section Management**: List, add, remove, clear, and reorder presentation sections directly inside the tool.
+- **Appending Blank Slides**: Option to automatically insert a solid blank slide at the end of embedded sections to clean up transitions.
+- **Flexible Options**: Toggle confirmation dialogs, control window "Keep on top" behavior, and auto-remember your preferences across launches.
 
-## Prerequisites
+## Quick Start (Run the Executable)
 
-- Windows OS
-- Microsoft PowerPoint installed
+If you just want to run the application without installing Python:
+
+1. **Download & Run**: Download the latest compiled `song_embed.exe` from the [Releases page](https://github.com/MrKuenning/PPT-Song-Embed/releases).
+2. **Prerequisites**: 
+   - Windows OS
+   - Microsoft PowerPoint installed and running
+
+## How to Use
+
+> [!IMPORTANT]
+> **PowerPoint Sections Requirement**: This application relies heavily on PowerPoint's **Section** feature. Your master presentation *must* contain pre-defined sections for each part of your service (e.g., separate sections for announcements, prayers, individual songs, sermon lessons, etc.) so the tool can target and replace content accurately.
+
+1. **Set Song Library**: Open the song embed program click on the **Browse** button and select the folder where all of your individual song PowerPoints (e.g., Paperless Hymnal files) are stored. This scans recurisvely so select the root folder that contains all the song files.
+![alt text](image_1.png)
+2. **Select Master PPT**: Open your master presentation in PowerPoint. Use the dropdown at the top of the Song Embed tool to select it (click the refresh button next to it if it doesn't show up right away). 
+   - Once selected, all PowerPoint sections will be listed in the **Sections** table on the left.
+   - Any sections containing existing songs will automatically display their song titles alongside a music note `🎵`.
+   - Click the optional **Scan Verses** button next to the refresh controls to scan and display which verses are currently embedded in the master presentation.
+![alt text](image_2.png)
+3. **Embed Content**:
+   - Click on any section in the **Sections** list to select it.
+   - Search for a song in the library search bar.
+   - Double-click the song or click **Embed** to push it into PowerPoint.
+   - Alternatively, click the **Select single file** button to select a file from elsewhere on your system, or **drag & drop a PPT file anywhere onto the Song Embed window** to inject it directly into the selected section.
+![alt text](image_3.png)
+4. **Manage Sections**: Use the toolbar buttons (`Add`, `Remove`, `Empty`, `Move Up`, `Move Down`) to edit your master slide structure on the fly.
+
+
+
+---
+
+## Development & Compiling from Source
+
+If you want to run the application from source code or compile your own binary:
+
+### Prerequisites
+
 - Python 3.x
-- Dependencies:
-  - `PyQt6`
-  - `pywin32` (for PowerPoint COM automation)
+- Python dependencies:
+  ```bash
+  pip install PyQt6 pywin32
+  ```
 
-## Installation
+### Running from Source
 
-1. Clone or copy the project files to your system.
-2. Install the required Python packages:
-   ```bash
-   pip install PyQt6 pywin32
-   ```
+To start the application, run:
+```bash
+python song_embed.py
+```
 
-## Compiling to an Executable
+### Compiling to an Executable
 
 To compile the application into a standalone Windows executable (`.exe`):
 
@@ -48,21 +82,3 @@ To compile the application into a standalone Windows executable (`.exe`):
    pyinstaller --noconsole --onefile --icon=icon.ico --add-data "icon.ico;." song_embed.py
    ```
    The compiled `.exe` will be generated in the `dist/` directory.
-
-## Running the Application
-
-To start the application from source, run:
-```bash
-python song_embed.py
-```
-
-## How to Use
-
-1. **Select Master PPT**: Open your master presentation in PowerPoint. Use the dropdown at the top of the Song Embed tool to select it. (Click the refresh button next to it if it doesn't show up right away).
-2. **Set Song Library**: Choose the folder where all of your individual song PowerPoints are stored.
-3. **Embed Content**:
-   - Click on any section in the **Sections** list to select it.
-   - Search for a song in the library search bar.
-   - Double-click the song or click **Embed** to push it into PowerPoint.
-   - Alternatively, click the **Select single file** button to select a file from elsewhere on your system, or **drag & drop a PPT file anywhere onto the Song Embed window** to inject it directly into the selected section.
-4. **Manage Sections**: Use the toolbar buttons (`Add`, `Remove`, `Empty`, `Move Up`, `Move Down`) to edit your master slide structure on the fly.
