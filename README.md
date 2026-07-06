@@ -1,10 +1,11 @@
+
 # Song Embed
 
 A lightweight Windows utility to automate the injection/embedding of lyric presentation slides and other slide content directly into a master PowerPoint slideshow presentation. 
 
 Designed specifically to work seamlessly with **The Paperless Hymnal**, this tool allows you to quickly select songs, scan their slide structures, select specific verses, and construct your Sunday service slideshow on the fly.
 
-![alt text](Song_Embed_Window.png)
+<img width="1058" height="783" alt="2026-07-06 12_31_35-Song Embed v2 2 0" src="https://github.com/user-attachments/assets/547db27e-2473-4d5f-9acc-7d21adc2087b" />
 
 ## Features
 
@@ -32,12 +33,12 @@ If you just want to run the application without installing Python:
 > **PowerPoint Sections Requirement**: This application relies heavily on PowerPoint's **Section** feature. Your master presentation *must* contain pre-defined sections for each part of your service (e.g., separate sections for announcements, prayers, individual songs, sermon lessons, etc.) so the tool can target and replace content accurately.
 
 1. **Set Song Library**: Open the song embed program click on the **Browse** button and select the folder where all of your individual song PowerPoints (e.g., Paperless Hymnal files) are stored. This scans recurisvely so select the root folder that contains all the song files.
-![alt text](image_1.png)
+<img width="1065" height="793" alt="2026-07-06 12_30_19-Song Embed v2 2 0" src="https://github.com/user-attachments/assets/2f0682fe-2611-4ec5-8a96-ff9c4fdbed33" />
 2. **Select Master PPT**: Open your master presentation in PowerPoint. Use the dropdown at the top of the Song Embed tool to select it (click the refresh button next to it if it doesn't show up right away). 
    - Once selected, all PowerPoint sections will be listed in the **Sections** table on the left.
    - Any sections containing existing songs will automatically display their song titles alongside a music note `🎵`.
    - Click the optional **Scan Verses** button next to the refresh controls to scan and display which verses are currently embedded in the master presentation.
-![alt text](image_2.png)
+<img width="1058" height="783" alt="2026-07-06 12_35_48-Song Embed v2 2 0" src="https://github.com/user-attachments/assets/245f4785-d342-42af-8a34-b3f83a9ccd79" />
 3. **Embed Content**:
    - Click on any section in the **Sections** list to select it.
    - Search for a song in the library search bar.
