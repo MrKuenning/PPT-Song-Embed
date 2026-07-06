@@ -31,7 +31,7 @@ If you just want to run the application without installing Python:
 > [!IMPORTANT]
 > **PowerPoint Sections Requirement**: This application relies heavily on PowerPoint's **Section** feature. Your master presentation *must* contain pre-defined sections for each part of your service (e.g., separate sections for announcements, prayers, individual songs, sermon lessons, etc.) so the tool can target and replace content accurately.
 
-1. **Set Song Library**: Open the song embed program click on the **Browse** button and select the folder where all of your individual song PowerPoints (e.g., Paperless Hymnal files) are stored. This scans recurisvely so select the root folder that contains all the song files.
+1. **Set Song Library**: Open the song embed program, click on the **Browse** button, and select the folder where all of your individual song PowerPoints (e.g., Paperless Hymnal files) are stored. This scans recursively, so select the root folder that contains all the song files.
 <img src="https://github.com/user-attachments/assets/2f0682fe-2611-4ec5-8a96-ff9c4fdbed33" width="49%" alt="Description 2">
 
 2. **Select Master PPT**: Open your master presentation in PowerPoint. Use the dropdown at the top of the Song Embed tool to select it (click the refresh button next to it if it doesn't show up right away). 
@@ -50,9 +50,9 @@ If you just want to run the application without installing Python:
 
 4. **Manage Sections**: Use the toolbar buttons (`Add`, `Remove`, `Empty`, `Move Up`, `Move Down`) to edit your master slide structure on the fly.
 
-## Optional Auto Embed Mode
+## Optional Auto Sections Mode / On-the-fly creation.
 
-For a dynamic song session on the fly, you can check the **Auto Section** checkbox. This allows the program to automatically create a new section (e.g. "Song 4") for each song you embed rather than replacing existing slides. 
+For a dynamic song session on-the-fly, you can check the **Auto Section** checkbox. This allows the program to automatically create a new section (e.g. "Song 4") for each song you embed rather than replacing existing slides. 
 
 - This is especially useful for song sessions that do not have a pre-created PowerPoint presentation structure beforehand.
 - You can combine this with the **First & Last** toggle to automatically insert the songs with just their first and last verses, or leave it unchecked to insert all verses.
