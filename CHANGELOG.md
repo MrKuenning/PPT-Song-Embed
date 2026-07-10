@@ -1,10 +1,16 @@
 # CHANGELOG
 
-## [2.3.0] - 2026-07-10
+## [2.4.0] - 2026-07-10
 
 ### Added
-- **1st, 2nd & Last Toggle**: Added a new toggle button to automatically select the first two verses and the last verse of a song. This functions similarly to the "First & Last" toggle.
-- **Toggle Exclusivity**: The "First & Last" and "1st, 2nd & Last" toggles are now mutually exclusive to prevent conflicting auto-scanning behaviors.
+- **1st, 2nd & Last Toggle**: Added a new toggle button to automatically select the first two verses and the last verse of a song.
+- **All Toggle**: Added a third, default "All" toggle to explicitly select all verses.
+- **Toggle Exclusivity**: The "All", "1st & Last", and "1st, 2nd & Last" toggles are now mutually exclusive to prevent conflicting auto-scanning behaviors. Selecting one will toggle the others off. Manually unchecking the active specific selection will revert to the "All" default.
+- **Keyboard Controls**: Added keyboard navigation to speed up embedding. Pressing the Down arrow key from the search box transfers focus to the song list, and pressing Enter on the song list directly embeds the selected song.
+
+### Changed
+- **Button Renaming**: Renamed the master slideshow scan button to "Show Verses" and the individual song scan button to "Scan For Verses" to clarify their distinct functions.
+- **UI Naming**: Renamed "First & Last" to "1st & Last" to match the style of the other toggles.
 
 ## [2.2.0] - 2026-07-06
 

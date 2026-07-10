@@ -15,7 +15,7 @@ import ctypes
 # --- Configuration ---
 APP_NAME = "SongEmbed"
 ORG_NAME = "ChurchMedia"
-APP_VERSION = "2.3.0"
+APP_VERSION = "2.4.0"
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 780
 DEFAULT_FOLDER_TEXT = "No folder selected — click 📂"
@@ -102,7 +102,7 @@ from PyQt6.QtWidgets import (
     QComboBox, QGroupBox, QScrollArea, QInputDialog, QSplitter,
     QTreeWidget, QTreeWidgetItem
 )
-from PyQt6.QtCore import Qt, QSize, QSettings, QRect, pyqtSignal
+from PyQt6.QtCore import Qt, QSize, QSettings, QRect, pyqtSignal, QEvent
 from PyQt6.QtGui import QColor, QIcon, QPainter
 
 # Conditionally import win32com only on Windows
@@ -434,7 +434,7 @@ QPushButton#verseButton:checked {
     color: #ffffff;
     border-color: #4f46e5;
 }
-QPushButton#firstLastButton, QPushButton#firstSecondLastButton {
+QPushButton#firstLastButton, QPushButton#firstSecondLastButton, QPushButton#allVersesButton {
     background-color: transparent;
     color: #818cf8;
     border: 1px solid #4f46e5;
@@ -442,25 +442,13 @@ QPushButton#firstLastButton, QPushButton#firstSecondLastButton {
     padding: 4px 8px;
     font-size: 9pt;
 }
-QPushButton#firstLastButton:hover, QPushButton#firstSecondLastButton:hover {
+QPushButton#firstLastButton:hover, QPushButton#firstSecondLastButton:hover, QPushButton#allVersesButton:hover {
     background-color: #3730a3;
     color: #ffffff;
 }
-QPushButton#firstLastButton:checked, QPushButton#firstSecondLastButton:checked {
+QPushButton#firstLastButton:checked, QPushButton#firstSecondLastButton:checked, QPushButton#allVersesButton:checked {
     background-color: #4f46e5;
     color: #ffffff;
-}
-QPushButton#allVersesButton {
-    background-color: transparent;
-    color: #a1a1aa;
-    border: 1px solid #3f3f46;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 9pt;
-}
-QPushButton#allVersesButton:hover {
-    background-color: #3f3f46;
-    color: #f4f4f5;
 }
 QLabel#verseInfoLabel {
     color: #71717a;
@@ -621,7 +609,7 @@ class SongEmbedApp(QWidget):
         self.refresh_btn.setFixedWidth(40)
         self.refresh_btn.clicked.connect(self.refresh_open_ppts)
 
-        self.scan_master_verses_btn = QPushButton("Scan Verses")
+        self.scan_master_verses_btn = QPushButton("Show Verses")
         self.scan_master_verses_btn.setToolTip("Scan master presentation sections for embedded verses")
         self.scan_master_verses_btn.clicked.connect(self.scan_master_verses)
 
@@ -736,13 +724,13 @@ class SongEmbedApp(QWidget):
         verse_top_row = QHBoxLayout()
         verse_top_row.setSpacing(8)
 
-        self.scan_verses_btn = QPushButton("🔍 Scan Verses")
+        self.scan_verses_btn = QPushButton("🔍 Scan For Verses")
         self.scan_verses_btn.setObjectName("scanVersesButton")
         self.scan_verses_btn.setToolTip("Scan the selected song to detect verses and choruses")
         self.scan_verses_btn.setEnabled(False)
         self.scan_verses_btn.clicked.connect(self.scan_song_verses)
 
-        self.first_last_btn = QPushButton("First && Last")
+        self.first_last_btn = QPushButton("1st && Last")
         self.first_last_btn.setObjectName("firstLastButton")
         self.first_last_btn.setToolTip("Auto-embed first and last verses only")
         self.first_last_btn.setCheckable(True)
@@ -754,16 +742,39 @@ class SongEmbedApp(QWidget):
         self.first_second_last_btn.setCheckable(True)
         self.first_second_last_btn.clicked.connect(self.select_first_second_and_last)
         
+        self.all_verses_btn = QPushButton("All")
+        self.all_verses_btn.setObjectName("allVersesButton")
+        self.all_verses_btn.setToolTip("Auto-embed all verses")
+        self.all_verses_btn.setCheckable(True)
+        self.all_verses_btn.clicked.connect(self.select_all_verses)
+        
         # Restore state
         fl_val = self.settings.value("first_last_toggle", False, type=bool)
         fsl_val = self.settings.value("first_second_last_toggle", False, type=bool)
+        all_val = self.settings.value("all_verses_toggle", True, type=bool)
+        
+        # Ensure only one is checked on startup
+        if all_val:
+            fl_val = False
+            fsl_val = False
+        elif fl_val:
+            fsl_val = False
+            all_val = False
+        elif fsl_val:
+            fl_val = False
+            all_val = False
+        else:
+            all_val = True
+            
         self.first_last_btn.setChecked(fl_val)
         self.first_second_last_btn.setChecked(fsl_val)
+        self.all_verses_btn.setChecked(all_val)
 
         self.verse_info_label = QLabel("")
         self.verse_info_label.setObjectName("verseInfoLabel")
 
         verse_top_row.addWidget(self.scan_verses_btn)
+        verse_top_row.addWidget(self.all_verses_btn)
         verse_top_row.addWidget(self.first_last_btn)
         verse_top_row.addWidget(self.first_second_last_btn)
         verse_top_row.addWidget(self.verse_info_label, 1)
@@ -862,7 +873,25 @@ class SongEmbedApp(QWidget):
         if self.keep_on_top_cb.isChecked():
             self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
 
+        self.search_box.installEventFilter(self)
+        self.file_list.installEventFilter(self)
         self.search_box.setFocus()
+
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.Type.KeyPress:
+            if source is self.search_box:
+                if event.key() == Qt.Key.Key_Down:
+                    if self.file_list.count() > 0:
+                        self.file_list.setFocus()
+                        if not self.file_list.selectedItems():
+                            self.file_list.setCurrentRow(0)
+                        return True
+            elif source is self.file_list:
+                if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                    if self.embed_btn.isEnabled():
+                        self.embed_selected()
+                        return True
+        return super().eventFilter(source, event)
 
     def apply_dark_theme(self):
         self.setStyleSheet(DARK_STYLESHEET)
@@ -1652,10 +1681,12 @@ class SongEmbedApp(QWidget):
         if not self.parsed_song_structure:
             self.first_last_btn.setVisible(False)
             self.first_second_last_btn.setVisible(False)
+            self.all_verses_btn.setVisible(False)
             return
 
         self.first_last_btn.setVisible(True)
         self.first_second_last_btn.setVisible(True)
+        self.all_verses_btn.setVisible(True)
 
         for entry in self.parsed_song_structure:
             verse_num = entry["verse"]
@@ -1674,6 +1705,8 @@ class SongEmbedApp(QWidget):
             self.select_first_and_last(True)
         elif self.first_second_last_btn.isChecked():
             self.select_first_second_and_last(True)
+        elif self.all_verses_btn.isChecked():
+            self.select_all_verses(True)
 
     def _clear_verse_buttons(self):
         """Remove all verse toggle buttons from the layout."""
@@ -1717,6 +1750,17 @@ class SongEmbedApp(QWidget):
             self.first_second_last_btn.blockSignals(False)
             self.settings.setValue("first_second_last_toggle", False)
             
+            self.all_verses_btn.blockSignals(True)
+            self.all_verses_btn.setChecked(False)
+            self.all_verses_btn.blockSignals(False)
+            self.settings.setValue("all_verses_toggle", False)
+        elif not self.first_second_last_btn.isChecked():
+            # If unchecked and the other isn't checked, default to All
+            self.all_verses_btn.blockSignals(True)
+            self.all_verses_btn.setChecked(True)
+            self.all_verses_btn.blockSignals(False)
+            self.settings.setValue("all_verses_toggle", True)
+            
         self.settings.setValue("first_last_toggle", checked)
 
         if not self.verse_buttons:
@@ -1742,6 +1786,17 @@ class SongEmbedApp(QWidget):
             self.first_last_btn.blockSignals(False)
             self.settings.setValue("first_last_toggle", False)
             
+            self.all_verses_btn.blockSignals(True)
+            self.all_verses_btn.setChecked(False)
+            self.all_verses_btn.blockSignals(False)
+            self.settings.setValue("all_verses_toggle", False)
+        elif not self.first_last_btn.isChecked():
+            # If unchecked and the other isn't checked, default to All
+            self.all_verses_btn.blockSignals(True)
+            self.all_verses_btn.setChecked(True)
+            self.all_verses_btn.blockSignals(False)
+            self.settings.setValue("all_verses_toggle", True)
+            
         self.settings.setValue("first_second_last_toggle", checked)
 
         if not self.verse_buttons:
@@ -1756,6 +1811,35 @@ class SongEmbedApp(QWidget):
             for i, btn in enumerate(self.verse_buttons):
                 btn.setChecked(i == 0 or i == 1 or i == len(self.verse_buttons) - 1)
         else:
+            for btn in self.verse_buttons:
+                btn.setChecked(True)
+
+    def select_all_verses(self, checked):
+        """Toggle verse buttons to select all verses."""
+        if checked:
+            self.first_last_btn.blockSignals(True)
+            self.first_last_btn.setChecked(False)
+            self.first_last_btn.blockSignals(False)
+            self.settings.setValue("first_last_toggle", False)
+            
+            self.first_second_last_btn.blockSignals(True)
+            self.first_second_last_btn.setChecked(False)
+            self.first_second_last_btn.blockSignals(False)
+            self.settings.setValue("first_second_last_toggle", False)
+            
+            self.settings.setValue("all_verses_toggle", True)
+        else:
+            # Prevent unchecking "All" if no others are checked
+            if not self.first_last_btn.isChecked() and not self.first_second_last_btn.isChecked():
+                self.all_verses_btn.blockSignals(True)
+                self.all_verses_btn.setChecked(True)
+                self.all_verses_btn.blockSignals(False)
+                return
+
+        if not self.verse_buttons:
+            return
+            
+        if checked:
             for btn in self.verse_buttons:
                 btn.setChecked(True)
 
@@ -1829,8 +1913,8 @@ class SongEmbedApp(QWidget):
             return
 
         # ── Determine Verse Selection ──
-        # If First & Last or 1st, 2nd & Last is toggled ON but the song hasn't been scanned, scan it now
-        if (self.first_last_btn.isChecked() or self.first_second_last_btn.isChecked()) and song_path != self.parsed_song_path:
+        # If a specific toggle is ON but the song hasn't been scanned, scan it now
+        if (self.first_last_btn.isChecked() or self.first_second_last_btn.isChecked() or self.all_verses_btn.isChecked()) and song_path != self.parsed_song_path:
             self.scan_song_verses()
 
         slide_indices = self._get_selected_slide_indices()
@@ -2316,6 +2400,8 @@ class SongEmbedApp(QWidget):
             self.settings.setValue("first_last_toggle", self.first_last_btn.isChecked())
         if hasattr(self, 'first_second_last_btn'):
             self.settings.setValue("first_second_last_toggle", self.first_second_last_btn.isChecked())
+        if hasattr(self, 'all_verses_btn'):
+            self.settings.setValue("all_verses_toggle", self.all_verses_btn.isChecked())
 
         if HAS_WIN32COM:
             try:

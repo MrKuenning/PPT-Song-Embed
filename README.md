@@ -9,7 +9,7 @@ Designed specifically to work seamlessly with **The Paperless Hymnal**, this too
 ## Features
 
 - **Quick Song Search Index**: Instantly filter and select songs from your local song ppt library folder using a fast search bar.
-- **Song Verse Selection**: Scan songs to detect verse structure and choose specific verses to embed (including a persistent "First & Last" toggle for quick setup).
+- **Song Verse Selection**: Scan songs to detect verse structure and choose specific verses to embed (including persistent "All", "1st & Last", and "1st, 2nd & Last" toggles for quick setup).
 - **Automated Embedding**: Replace section contents with slides from chosen songs automatically.
 - **One-Off PPT Embedding**: Support for injecting one-off slide files (e.g., sermon lessons, announcements) via file browser or direct drag-and-drop.
 - **Preserves Source Formatting**: Relies on PowerPoint's native copy-paste flow to preserve exact formatting, layouts, and background designs of the embedded slides.
@@ -37,7 +37,7 @@ If you just want to run the application without installing Python:
 2. **Select Master PPT**: Open your master presentation in PowerPoint. Use the dropdown at the top of the Song Embed tool to select it (click the refresh button next to it if it doesn't show up right away). 
    - Once selected, all PowerPoint sections will be listed in the **Sections** table on the left.
    - Any sections containing existing songs will automatically display their song titles alongside a music note `🎵`.
-   - Click the optional **Scan Verses** button next to the refresh controls to scan and display which verses are currently embedded in the master presentation.
+   - Click the optional **Show Verses** button next to the refresh controls to scan and display which verses are currently embedded in the master presentation.
 <img src="https://github.com/user-attachments/assets/245f4785-d342-42af-8a34-b3f83a9ccd793" width="49%" alt="Description 2">
 
 3. **Embed Content**:
@@ -55,7 +55,7 @@ If you just want to run the application without installing Python:
 For a dynamic song session on-the-fly, you can check the **Auto Section** checkbox. This allows the program to automatically create a new section (e.g. "Song 4") for each song you embed rather than replacing existing slides. 
 
 - This is especially useful for song sessions that do not have a pre-created PowerPoint presentation structure beforehand.
-- You can combine this with the **First & Last** toggle to automatically insert the songs with just their first and last verses, or leave it unchecked to insert all verses.
+- You can combine this with the specific verse toggles to automatically insert the songs with just their 1st & Last verses, or leave the default "All" toggle checked to insert all verses.
 
 ## UI Settings & Buttons Reference
 
@@ -65,7 +65,7 @@ For a dynamic song session on-the-fly, you can check the **Auto Section** checkb
 | :--- | :--- |
 | **Select Master PPT** | Dropdown to choose which open PowerPoint presentation to target. |
 | **🔄 (Refresh)** | Re-scans active PowerPoint windows and updates the section table. |
-| **Scan Verses** | Analyzes existing slides inside master PPT sections to display currently active verses. |
+| **Show Verses** | Analyzes existing slides inside master PPT sections to display currently active verses. |
 | **Sections Table** | Shows all sections in the active PowerPoint, along with current song title and embedded verses. |
 | **➕ Add** | Add a new section to the master PowerPoint after the currently selected section. |
 | **❌ Remove** | Delete the selected section and all slides contained within it. |
@@ -80,8 +80,8 @@ For a dynamic song session on-the-fly, you can check the **Auto Section** checkb
 | **Select single file** | Embeds a one-off PPT file (announcements, lessons) not located in your library folder. |
 | **Search Box** | Instantly filters the song library list as you type. |
 | **Song List** | Displays the list of songs in the song library. |
-| **🔍 Scan Verses** | Analyzes selected song and displays the number of verses in the song. |
-| **First & Last** | Toggle to auto-scan and embed only the first and last verses of the selected song. |
+| **🔍 Scan For Verses** | Analyzes selected song and displays the number of verses in the song. |
+| **All / 1st & Last / 1st, 2nd & Last** | Mutually exclusive toggles to auto-scan and embed all verses, the first & last verses, or the first, second & last verses of the selected song. |
 | **Target Dropdown** | Dropdown to select which section in the master presentation to embed the song into. |
 | **👁 Preview** | Opens the selected song to view its content. |
 | **Embed** | Copies the selected song's slides into the active section. |
