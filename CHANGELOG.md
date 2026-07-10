@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [2.3.0] - 2026-07-10
+
+### Added
+- **1st, 2nd & Last Toggle**: Added a new toggle button to automatically select the first two verses and the last verse of a song. This functions similarly to the "First & Last" toggle.
+- **Toggle Exclusivity**: The "First & Last" and "1st, 2nd & Last" toggles are now mutually exclusive to prevent conflicting auto-scanning behaviors.
+
 ## [2.2.0] - 2026-07-06
 
 ### Added

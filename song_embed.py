@@ -15,7 +15,7 @@ import ctypes
 # --- Configuration ---
 APP_NAME = "SongEmbed"
 ORG_NAME = "ChurchMedia"
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.3.0"
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 780
 DEFAULT_FOLDER_TEXT = "No folder selected — click 📂"
@@ -434,7 +434,7 @@ QPushButton#verseButton:checked {
     color: #ffffff;
     border-color: #4f46e5;
 }
-QPushButton#firstLastButton {
+QPushButton#firstLastButton, QPushButton#firstSecondLastButton {
     background-color: transparent;
     color: #818cf8;
     border: 1px solid #4f46e5;
@@ -442,11 +442,11 @@ QPushButton#firstLastButton {
     padding: 4px 8px;
     font-size: 9pt;
 }
-QPushButton#firstLastButton:hover {
+QPushButton#firstLastButton:hover, QPushButton#firstSecondLastButton:hover {
     background-color: #3730a3;
     color: #ffffff;
 }
-QPushButton#firstLastButton:checked {
+QPushButton#firstLastButton:checked, QPushButton#firstSecondLastButton:checked {
     background-color: #4f46e5;
     color: #ffffff;
 }
@@ -748,15 +748,24 @@ class SongEmbedApp(QWidget):
         self.first_last_btn.setCheckable(True)
         self.first_last_btn.clicked.connect(self.select_first_and_last)
         
+        self.first_second_last_btn = QPushButton("1st, 2nd && Last")
+        self.first_second_last_btn.setObjectName("firstSecondLastButton")
+        self.first_second_last_btn.setToolTip("Auto-embed first two and last verses only")
+        self.first_second_last_btn.setCheckable(True)
+        self.first_second_last_btn.clicked.connect(self.select_first_second_and_last)
+        
         # Restore state
         fl_val = self.settings.value("first_last_toggle", False, type=bool)
+        fsl_val = self.settings.value("first_second_last_toggle", False, type=bool)
         self.first_last_btn.setChecked(fl_val)
+        self.first_second_last_btn.setChecked(fsl_val)
 
         self.verse_info_label = QLabel("")
         self.verse_info_label.setObjectName("verseInfoLabel")
 
         verse_top_row.addWidget(self.scan_verses_btn)
         verse_top_row.addWidget(self.first_last_btn)
+        verse_top_row.addWidget(self.first_second_last_btn)
         verse_top_row.addWidget(self.verse_info_label, 1)
         verse_panel_layout.addLayout(verse_top_row)
 
@@ -1642,8 +1651,11 @@ class SongEmbedApp(QWidget):
 
         if not self.parsed_song_structure:
             self.first_last_btn.setVisible(False)
-            self.all_verses_btn.setVisible(False)
+            self.first_second_last_btn.setVisible(False)
             return
+
+        self.first_last_btn.setVisible(True)
+        self.first_second_last_btn.setVisible(True)
 
         for entry in self.parsed_song_structure:
             verse_num = entry["verse"]
@@ -1660,6 +1672,8 @@ class SongEmbedApp(QWidget):
         # Apply the toggle state if it's currently checked
         if self.first_last_btn.isChecked():
             self.select_first_and_last(True)
+        elif self.first_second_last_btn.isChecked():
+            self.select_first_second_and_last(True)
 
     def _clear_verse_buttons(self):
         """Remove all verse toggle buttons from the layout."""
@@ -1697,6 +1711,14 @@ class SongEmbedApp(QWidget):
 
     def select_first_and_last(self, checked):
         """Toggle verse buttons to select first and last verse if checked, else all verses."""
+        if checked:
+            self.first_second_last_btn.blockSignals(True)
+            self.first_second_last_btn.setChecked(False)
+            self.first_second_last_btn.blockSignals(False)
+            self.settings.setValue("first_second_last_toggle", False)
+            
+        self.settings.setValue("first_last_toggle", checked)
+
         if not self.verse_buttons:
             return
             
@@ -1708,6 +1730,31 @@ class SongEmbedApp(QWidget):
                 
             for i, btn in enumerate(self.verse_buttons):
                 btn.setChecked(i == 0 or i == len(self.verse_buttons) - 1)
+        else:
+            for btn in self.verse_buttons:
+                btn.setChecked(True)
+
+    def select_first_second_and_last(self, checked):
+        """Toggle verse buttons to select first, second, and last verse if checked, else all verses."""
+        if checked:
+            self.first_last_btn.blockSignals(True)
+            self.first_last_btn.setChecked(False)
+            self.first_last_btn.blockSignals(False)
+            self.settings.setValue("first_last_toggle", False)
+            
+        self.settings.setValue("first_second_last_toggle", checked)
+
+        if not self.verse_buttons:
+            return
+            
+        if checked:
+            if len(self.verse_buttons) < 3:
+                for btn in self.verse_buttons:
+                    btn.setChecked(True)
+                return
+                
+            for i, btn in enumerate(self.verse_buttons):
+                btn.setChecked(i == 0 or i == 1 or i == len(self.verse_buttons) - 1)
         else:
             for btn in self.verse_buttons:
                 btn.setChecked(True)
@@ -1782,8 +1829,8 @@ class SongEmbedApp(QWidget):
             return
 
         # ── Determine Verse Selection ──
-        # If First & Last is toggled ON but the song hasn't been scanned, scan it now
-        if self.first_last_btn.isChecked() and song_path != self.parsed_song_path:
+        # If First & Last or 1st, 2nd & Last is toggled ON but the song hasn't been scanned, scan it now
+        if (self.first_last_btn.isChecked() or self.first_second_last_btn.isChecked()) and song_path != self.parsed_song_path:
             self.scan_song_verses()
 
         slide_indices = self._get_selected_slide_indices()
@@ -2267,6 +2314,8 @@ class SongEmbedApp(QWidget):
             self.settings.setValue("tree_header_state", self.sections_tree.header().saveState())
         if hasattr(self, 'first_last_btn'):
             self.settings.setValue("first_last_toggle", self.first_last_btn.isChecked())
+        if hasattr(self, 'first_second_last_btn'):
+            self.settings.setValue("first_second_last_toggle", self.first_second_last_btn.isChecked())
 
         if HAS_WIN32COM:
             try:
