@@ -56,7 +56,7 @@ If you just want to run the application without installing Python:
 
 ## Optional Auto Sections Mode / On-the-fly creation.
 
-For a dynamic song session on-the-fly, you can check the **Auto Section** checkbox. This allows the program to automatically create a new section (e.g. "Song 4") for each song you embed rather than replacing existing slides. 
+For a dynamic song session on-the-fly, you can check the **Auto New Section** checkbox. This allows the program to automatically create a new section (e.g. "Song 4") for each song you embed rather than replacing existing slides. 
 
 - This is especially useful for song sessions that do not have a pre-created PowerPoint presentation structure beforehand.
 - You can combine this with the specific verse toggles to automatically insert the songs with just their 1st & Last verses, or leave the default "All" toggle checked to insert all verses.
@@ -85,21 +85,24 @@ For a dynamic song session on-the-fly, you can check the **Auto Section** checkb
 | **Search Box** | Instantly filters the song library list as you type. |
 | **Song List** | Displays the list of songs in the song library. |
 | **🔍 Scan For Verses** | Analyzes selected song and displays the number of verses in the song. |
+| **👁 Preview Song** | Opens the selected song to view its content before embedding. |
 | **All / 1st & Last / 1st, 2nd & Last** | Mutually exclusive toggles to auto-scan and embed all verses, the first & last verses, or the first, second & last verses of the selected song. |
+| **Embed Button** | Dynamically labelled (e.g., "Embed in Section..." or "Add New Section After...") to indicate the action. Copies the selected song's slides into PowerPoint. |
 | **Target Dropdown** | Dropdown to select which section in the master presentation to embed the song into. |
-| **👁 Preview** | Opens the selected song to view its content. |
-| **Embed** | Copies the selected song's slides into the active section. |
 
 
-### Settings
+### Settings & Status Bar
 
 | UI Element / Setting | Action / Purpose |
 | :--- | :--- |
 | **Keep on top** | Keeps the Song Embed window floating on top of PowerPoint and other apps. |
-| **Replace existing** | Checkbox to wipe existing slides in the targeted section before embedding new slides or append slides after the exisitng slides.. |
-| **Blank slide** | Checkbox to automatically append a solid blank slide at the end of the embedded content. |
-| **Auto Section** | Appends a new section after the selected one, rather than replacing or appending inside it. |
+| **Check updates on startup** | Automatically checks GitHub for new releases when you open the app. |
+| **Replace Content** | Checkbox to wipe existing slides in the targeted section before embedding new slides or append slides after the exisitng slides.. |
+| **Add Blank Slide** | Checkbox to automatically append a solid blank slide at the end of the embedded content. |
 | **Confirmation** | Prompts you with a confirmation warning before performing any slide embed. |
+| **Auto New Section** | Appends a new section after the selected one, rather than replacing or appending inside it. |
+| **▶ Hide Master Panel** | Toggle button in the bottom status area to collapse the left panel, freeing up screen space. |
+| **Check for Updates** | Manual button in the bottom status area to check for new app versions. |
 
 
 ---
@@ -120,7 +123,7 @@ If you want to run the application from source code or compile your own binary:
 
 To start the application, run:
 ```bash
-python song_embed.py
+python song_embed.pyw
 ```
 
 ### Compiling to an Executable
@@ -133,6 +136,6 @@ To compile the application into a standalone Windows executable (`.exe`):
    ```
 2. Build the app using:
    ```bash
-   pyinstaller --noconsole --onefile --icon=icon.ico --add-data "icon.ico;." song_embed.py
+   pyinstaller --noconsole --onefile --icon=icon.ico --add-data "icon.ico;." song_embed.pyw
    ```
    The compiled `.exe` will be generated in the `dist/` directory.
