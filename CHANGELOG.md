@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## [2.5.1] - 2026-07-13
+
+### Changed
+- **UI Tweaks**: Added a down arrow to the target dropdown, extended the status bar across the entire window width, normalized the height of the Preview Song button, and refined the color palette for a richer, more vibrant look.
+
 ## [2.5.0] - 2026-07-13
 
 ### Added

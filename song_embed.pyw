@@ -19,7 +19,7 @@ import webbrowser
 # --- Configuration ---
 APP_NAME = "SongEmbed"
 ORG_NAME = "ChurchMedia"
-APP_VERSION = "2.5.0"
+APP_VERSION = "2.5.1"
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 780
 DEFAULT_FOLDER_TEXT = "No folder selected — click 📂"
@@ -205,10 +205,10 @@ QLineEdit {
     border: 1px solid #2d2d30;
     border-radius: 6px;
     padding: 8px 12px;
-    selection-background-color: #6366f1;
+    selection-background-color: #666aba;
 }
 QLineEdit:focus {
-    border: 1px solid #6366f1;
+    border: 1px solid #666aba;
 }
 
 /* ── List Widget ── */
@@ -230,7 +230,7 @@ QListWidget::item:hover {
     color: #ffffff;
 }
 QListWidget::item:selected {
-    background-color: #6366f1;
+    background-color: #53569c;
     color: #ffffff;
 }
 
@@ -303,17 +303,22 @@ QComboBox:hover {
     border-color: #52525b;
 }
 QComboBox:focus {
-    border: 1px solid #6366f1;
+    border: 1px solid #666aba;
 }
 QComboBox::drop-down {
     border: none;
     padding-right: 10px;
 }
+QComboBox::down-arrow {
+    image: url(down_arrow.png);
+    width: 12px;
+    height: 12px;
+}
 QComboBox QAbstractItemView {
     background-color: #1a1a1e;
     color: #f4f4f5;
     border: 1px solid #3f3f46;
-    selection-background-color: #6366f1;
+    selection-background-color: #666aba;
     selection-color: #ffffff;
     outline: 0;
     padding: 4px;
@@ -353,8 +358,8 @@ QCheckBox::indicator:hover {
     border-color: #52525b;
 }
 QCheckBox::indicator:checked {
-    background-color: #6366f1;
-    border-color: #4f46e5;
+    background-color: #666aba;
+    border-color: #53569c;
 }
 
 /* ── MessageBox ── */
@@ -385,7 +390,7 @@ QTreeWidget#sectionsTree::item:hover {
     background-color: #27272a;
 }
 QTreeWidget#sectionsTree::item:selected {
-    background-color: #6366f1;
+    background-color: #53569c;
     color: #ffffff;
 }
 
@@ -410,7 +415,7 @@ QWidget#verseSelectorPanel {
     border-radius: 6px;
     padding: 8px;
 }
-QPushButton#scanVersesButton {
+QPushButton#scanVersesButton, QPushButton#previewButton {
     background-color: #27272a;
     color: #a1a1aa;
     border: 1px solid #3f3f46;
@@ -418,7 +423,7 @@ QPushButton#scanVersesButton {
     padding: 6px 14px;
     font-size: 9pt;
 }
-QPushButton#scanVersesButton:hover {
+QPushButton#scanVersesButton:hover, QPushButton#previewButton:hover {
     background-color: #3f3f46;
     color: #f4f4f5;
 }
@@ -435,14 +440,14 @@ QPushButton#verseButton:hover {
     color: #f4f4f5;
 }
 QPushButton#verseButton:checked {
-    background-color: #6366f1;
+    background-color: #666aba;
     color: #ffffff;
-    border-color: #4f46e5;
+    border-color: #53569c;
 }
 QPushButton#firstLastButton, QPushButton#firstSecondLastButton, QPushButton#allVersesButton {
     background-color: transparent;
     color: #818cf8;
-    border: 1px solid #4f46e5;
+    border: 1px solid #53569c;
     border-radius: 6px;
     padding: 4px 8px;
     font-size: 9pt;
@@ -452,7 +457,7 @@ QPushButton#firstLastButton:hover, QPushButton#firstSecondLastButton:hover, QPus
     color: #ffffff;
 }
 QPushButton#firstLastButton:checked, QPushButton#firstSecondLastButton:checked, QPushButton#allVersesButton:checked {
-    background-color: #4f46e5;
+    background-color: #53569c;
     color: #ffffff;
 }
 QLabel#verseInfoLabel {
@@ -694,15 +699,15 @@ class SongEmbedApp(QWidget):
 
         self.refresh_btn = QPushButton("🔄")
         self.refresh_btn.setToolTip("Refresh open PowerPoint files")
-        self.refresh_btn.setFixedWidth(40)
+        self.refresh_btn.setFixedWidth(30)
         self.refresh_btn.clicked.connect(self.refresh_open_ppts)
 
         self.scan_master_verses_btn = QPushButton("Show Verses")
         self.scan_master_verses_btn.setToolTip("Scan master presentation sections for embedded verses")
         self.scan_master_verses_btn.clicked.connect(self.scan_master_verses)
 
-        master_row.addWidget(self.master_combo, 1)
-        master_row.addWidget(self.scan_master_verses_btn)
+        master_row.addWidget(self.master_combo, 2)
+        master_row.addWidget(self.scan_master_verses_btn, 1)
         master_row.addWidget(self.refresh_btn)
         left_col.addLayout(master_row)
 
@@ -957,16 +962,12 @@ class SongEmbedApp(QWidget):
 
         # ── Status bar & Version Info ──
         bottom_layout = QHBoxLayout()
-        bottom_layout.setContentsMargins(0, 0, 0, 0)
+        bottom_layout.setContentsMargins(0, 5, 0, 0)
 
-        self.toggle_left_btn = QPushButton("▶ Hide Master Panel")
-        self.toggle_left_btn.setObjectName("clearButton")
-        self.toggle_left_btn.clicked.connect(self.toggle_left_panel)
-        bottom_layout.addWidget(self.toggle_left_btn)
-
-        self.status_label = QLabel("Ready")
-        self.status_label.setObjectName("statusLabel")
-        bottom_layout.addWidget(self.status_label, 1)
+        self.version_label = QLabel(f"v{APP_VERSION}")
+        self.version_label.setObjectName("versionLabel")
+        self.version_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        bottom_layout.addWidget(self.version_label)
 
         self.check_updates_btn = QPushButton("Check for Updates")
         self.check_updates_btn.setObjectName("clearButton")
@@ -974,12 +975,21 @@ class SongEmbedApp(QWidget):
         self.check_updates_btn.clicked.connect(self.check_for_updates_manual)
         bottom_layout.addWidget(self.check_updates_btn)
 
-        self.version_label = QLabel(f"v{APP_VERSION}")
-        self.version_label.setObjectName("versionLabel")
-        self.version_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        bottom_layout.addWidget(self.version_label)
+        bottom_layout.addSpacing(15)
 
-        right_col.addLayout(bottom_layout)
+        self.status_label = QLabel("Ready")
+        self.status_label.setObjectName("statusLabel")
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        bottom_layout.addWidget(self.status_label)
+
+        bottom_layout.addStretch()
+
+        self.toggle_left_btn = QPushButton("▶ Hide Master Panel")
+        self.toggle_left_btn.setObjectName("clearButton")
+        self.toggle_left_btn.clicked.connect(self.toggle_left_panel)
+        bottom_layout.addWidget(self.toggle_left_btn)
+
+        main.addLayout(bottom_layout)
 
         # ── Window flags ──
         if self.keep_on_top_cb.isChecked():
@@ -1673,21 +1683,21 @@ class SongEmbedApp(QWidget):
                     QPushButton#embedButton {
                         background-color: #2563eb;
                         color: #ffffff;
-                        border: 1px solid #1d4ed8;
+                        border: 1px solid #2d4373;
                         font-weight: 600;
                         min-width: 100px;
                         padding: 12px 24px;
                         font-size: 11pt;
                     }
                     QPushButton#embedButton:hover {
-                        background-color: #1d4ed8;
+                        background-color: #2d4373;
                     }
                     QPushButton#embedButton:pressed {
-                        background-color: #1e40af;
+                        background-color: #233352;
                     }
                     QPushButton#embedButton:disabled {
                         background-color: #1e3a8a;
-                        color: #1e40af;
+                        color: #233352;
                         border-color: #1e3a8a;
                     }
                 """)
