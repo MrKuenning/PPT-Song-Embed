@@ -19,7 +19,7 @@ import webbrowser
 # --- Configuration ---
 APP_NAME = "SongEmbed"
 ORG_NAME = "ChurchMedia"
-APP_VERSION = "2.4.1"
+APP_VERSION = "2.4.2"
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 780
 DEFAULT_FOLDER_TEXT = "No folder selected — click 📂"
@@ -942,6 +942,7 @@ class SongEmbedApp(QWidget):
         append_val = self.settings.value("auto_append", False)
         self.auto_append_cb.setChecked(str(append_val).lower() == 'true' if isinstance(append_val, str) else bool(append_val))
         self.auto_append_cb.stateChanged.connect(lambda: self.settings.setValue("auto_append", self.auto_append_cb.isChecked()))
+        self.auto_append_cb.stateChanged.connect(self.update_embed_state)
 
         options_row.addWidget(self.replace_cb)
         options_row.addWidget(self.insert_blank_cb)
@@ -1597,6 +1598,39 @@ class SongEmbedApp(QWidget):
         self.preview_btn.setEnabled(has_song)
         self.scan_verses_btn.setEnabled(has_song)
         self.embed_btn.setEnabled(has_song and has_master and has_target)
+        
+        # Update text and styling of embed button based on auto section mode
+        if has_target:
+            target_name = self.target_combo.currentText()
+            if self.auto_append_cb.isChecked():
+                self.embed_btn.setText(f'Add New Section After "{target_name}"')
+                self.embed_btn.setStyleSheet("""
+                    QPushButton#embedButton {
+                        background-color: #2563eb;
+                        color: #ffffff;
+                        border: 1px solid #1d4ed8;
+                        font-weight: 600;
+                        min-width: 100px;
+                        padding: 8px 20px;
+                    }
+                    QPushButton#embedButton:hover {
+                        background-color: #1d4ed8;
+                    }
+                    QPushButton#embedButton:pressed {
+                        background-color: #1e40af;
+                    }
+                    QPushButton#embedButton:disabled {
+                        background-color: #1e3a8a;
+                        color: #1e40af;
+                        border-color: #1e3a8a;
+                    }
+                """)
+            else:
+                self.embed_btn.setText(f'Embed in Section "{target_name}"')
+                self.embed_btn.setStyleSheet("")
+        else:
+            self.embed_btn.setText("📥 Embed")
+            self.embed_btn.setStyleSheet("")
 
     # ── Preview Logic ────────────────────────────────────────────────────────
 

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## [2.4.2] - 2026-07-13
+
+### Changed
+- **Dynamic Embed Button**: The main embed button now explicitly states what action it will perform (e.g. "Add New Section After..." vs "Embed in Section...") and dynamically changes to blue when "Auto Section" mode is enabled to make the destructive action more obvious.
+- **Update Checker Fix**: Fixed a bug where the update checker would incorrectly flag the current version as out of date.
+
+
 ## [2.4.1] - 2026-07-13
 
 ### Added
