@@ -19,7 +19,7 @@ import webbrowser
 # --- Configuration ---
 APP_NAME = "SongEmbed"
 ORG_NAME = "ChurchMedia"
-APP_VERSION = "2.4.2"
+APP_VERSION = "2.5.0"
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 780
 DEFAULT_FOLDER_TEXT = "No folder selected — click 📂"
@@ -262,7 +262,8 @@ QPushButton#embedButton {
     border: 1px solid #047857;
     font-weight: 600;
     min-width: 100px;
-    padding: 8px 20px;
+    padding: 12px 24px;
+    font-size: 11pt;
 }
 QPushButton#embedButton:hover {
     background-color: #047857;
@@ -654,11 +655,11 @@ class SongEmbedApp(QWidget):
         main.addWidget(self.split_layout, 1)
 
         # ── Left Column ──
-        left_col_widget = QWidget()
-        left_col = QVBoxLayout(left_col_widget)
+        self.left_col_widget = QWidget()
+        left_col = QVBoxLayout(self.left_col_widget)
         left_col.setContentsMargins(0, 0, 10, 0)
         left_col.setSpacing(10)
-        self.split_layout.addWidget(left_col_widget)
+        self.split_layout.addWidget(self.left_col_widget)
 
         # ── Right Column ──
         right_col_widget = QWidget()
@@ -826,6 +827,11 @@ class SongEmbedApp(QWidget):
         self.scan_verses_btn.setEnabled(False)
         self.scan_verses_btn.clicked.connect(self.scan_song_verses)
 
+        self.preview_btn = QPushButton("👁 Preview Song")
+        self.preview_btn.setObjectName("previewButton")
+        self.preview_btn.setEnabled(False)
+        self.preview_btn.clicked.connect(self.preview_selected)
+
         self.first_last_btn = QPushButton("1st && Last")
         self.first_last_btn.setObjectName("firstLastButton")
         self.first_last_btn.setToolTip("Auto-embed first and last verses only")
@@ -866,15 +872,18 @@ class SongEmbedApp(QWidget):
         self.first_second_last_btn.setChecked(fsl_val)
         self.all_verses_btn.setChecked(all_val)
 
-        self.verse_info_label = QLabel("")
-        self.verse_info_label.setObjectName("verseInfoLabel")
-
         verse_top_row.addWidget(self.scan_verses_btn)
+        verse_top_row.addWidget(self.preview_btn)
         verse_top_row.addWidget(self.all_verses_btn)
         verse_top_row.addWidget(self.first_last_btn)
         verse_top_row.addWidget(self.first_second_last_btn)
-        verse_top_row.addWidget(self.verse_info_label, 1)
+        verse_top_row.addStretch()
         verse_panel_layout.addLayout(verse_top_row)
+
+        self.verse_info_label = QLabel("")
+        self.verse_info_label.setObjectName("verseInfoLabel")
+        self.verse_info_label.hide()
+        verse_panel_layout.addWidget(self.verse_info_label)
 
         # Row for dynamically generated verse buttons + shortcuts
         self.verse_buttons_row = QHBoxLayout()
@@ -901,34 +910,28 @@ class SongEmbedApp(QWidget):
         self.target_combo.addItem("— none —")
         self.target_combo.currentIndexChanged.connect(self._on_target_changed)
 
-        self.preview_btn = QPushButton("👁 Preview")
-        self.preview_btn.setObjectName("previewButton")
-        self.preview_btn.setEnabled(False)
-        self.preview_btn.clicked.connect(self.preview_selected)
-
         self.embed_btn = QPushButton("📥 Embed")
         self.embed_btn.setObjectName("embedButton")
         self.embed_btn.setEnabled(False)
         self.embed_btn.clicked.connect(self.embed_selected)
 
-        action_row.addWidget(target_lbl)
-        action_row.addWidget(self.target_combo)
-        action_row.addWidget(self.preview_btn)
         action_row.addWidget(self.embed_btn)
         action_row.addSpacerItem(
             QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+        action_row.addWidget(target_lbl)
+        action_row.addWidget(self.target_combo)
         right_col.addLayout(action_row)
 
         # ── Options row ──
         options_row = QHBoxLayout()
         options_row.setSpacing(12)
 
-        self.replace_cb = QCheckBox("Replace Existing")
+        self.replace_cb = QCheckBox("Replace Content")
         replace_val = self.settings.value("replace_existing", True)
         self.replace_cb.setChecked(str(replace_val).lower() == 'true' if isinstance(replace_val, str) else bool(replace_val))
         self.replace_cb.stateChanged.connect(lambda: self.settings.setValue("replace_existing", self.replace_cb.isChecked()))
 
-        self.insert_blank_cb = QCheckBox("Blank Slide")
+        self.insert_blank_cb = QCheckBox("Add Blank Slide")
         blank_val = self.settings.value("insert_blank", True)
         self.insert_blank_cb.setChecked(str(blank_val).lower() == 'true' if isinstance(blank_val, str) else bool(blank_val))
         self.insert_blank_cb.stateChanged.connect(lambda: self.settings.setValue("insert_blank", self.insert_blank_cb.isChecked()))
@@ -938,7 +941,7 @@ class SongEmbedApp(QWidget):
         self.require_confirm_cb.setChecked(str(confirm_val).lower() == 'true' if isinstance(confirm_val, str) else bool(confirm_val))
         self.require_confirm_cb.stateChanged.connect(lambda: self.settings.setValue("require_confirm", self.require_confirm_cb.isChecked()))
 
-        self.auto_append_cb = QCheckBox("Auto Section")
+        self.auto_append_cb = QCheckBox("Auto New Section")
         append_val = self.settings.value("auto_append", False)
         self.auto_append_cb.setChecked(str(append_val).lower() == 'true' if isinstance(append_val, str) else bool(append_val))
         self.auto_append_cb.stateChanged.connect(lambda: self.settings.setValue("auto_append", self.auto_append_cb.isChecked()))
@@ -946,14 +949,20 @@ class SongEmbedApp(QWidget):
 
         options_row.addWidget(self.replace_cb)
         options_row.addWidget(self.insert_blank_cb)
-        options_row.addWidget(self.auto_append_cb)
         options_row.addWidget(self.require_confirm_cb)
+        options_row.addWidget(self.auto_append_cb)
         options_row.addStretch()
         right_col.addLayout(options_row)
+
 
         # ── Status bar & Version Info ──
         bottom_layout = QHBoxLayout()
         bottom_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.toggle_left_btn = QPushButton("▶ Hide Master Panel")
+        self.toggle_left_btn.setObjectName("clearButton")
+        self.toggle_left_btn.clicked.connect(self.toggle_left_panel)
+        bottom_layout.addWidget(self.toggle_left_btn)
 
         self.status_label = QLabel("Ready")
         self.status_label.setObjectName("statusLabel")
@@ -970,7 +979,7 @@ class SongEmbedApp(QWidget):
         self.version_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         bottom_layout.addWidget(self.version_label)
 
-        main.addLayout(bottom_layout)
+        right_col.addLayout(bottom_layout)
 
         # ── Window flags ──
         if self.keep_on_top_cb.isChecked():
@@ -1584,6 +1593,62 @@ class SongEmbedApp(QWidget):
             if first.data(Qt.ItemDataRole.UserRole):
                 self.file_list.setCurrentItem(first)
 
+    def toggle_left_panel(self):
+        """Toggle the visibility of the left master panel and shrink/expand the window."""
+        handle_width = self.split_layout.handleWidth()
+        
+        if self.left_col_widget.isHidden():
+            old_pos = self.pos()
+            old_width = self.width()
+            
+            self.left_col_widget.show()
+            
+            added_width = getattr(self, 'saved_left_width', 600)
+            grow_amount = added_width + handle_width
+            
+            # Temporarily remove minimum width to ensure seamless resize
+            self.setMinimumWidth(100)
+            
+            # Expand window and move left to keep right edge perfectly anchored
+            self.move(old_pos.x() - grow_amount, old_pos.y())
+            self.resize(old_width + grow_amount, self.height())
+            
+            self.setMinimumWidth(0) # Restore default layout constraint
+            
+            sizes = self.split_layout.sizes()
+            sizes[0] = added_width
+            self.split_layout.setSizes(sizes)
+            
+            self.toggle_left_btn.setText("▶ Hide Master Panel")
+        else:
+            # Save current width of left panel before hiding
+            sizes = self.split_layout.sizes()
+            if sizes[0] > 0:
+                self.saved_left_width = sizes[0]
+            else:
+                self.saved_left_width = 600
+                
+            old_pos = self.pos()
+            old_width = self.width()
+            
+            self.left_col_widget.hide()
+            
+            # Include the splitter handle width in the total amount we are removing
+            shrink_amount = self.saved_left_width + handle_width
+            target_width = old_width - shrink_amount
+            
+            # Temporarily override layout minimum width to allow the window to shrink down
+            # exactly to the width of the song library panel.
+            self.setMinimumWidth(100)
+            
+            # Shrink window width and move window right by exact amount
+            self.move(old_pos.x() + shrink_amount, old_pos.y())
+            self.resize(target_width, self.height())
+            
+            self.setMinimumWidth(0) # Restore default layout constraint
+            
+            self.toggle_left_btn.setText("◀ Show Master Panel")
+
     # ── Embed State ──────────────────────────────────────────────────────────
 
     def update_embed_state(self):
@@ -1611,7 +1676,8 @@ class SongEmbedApp(QWidget):
                         border: 1px solid #1d4ed8;
                         font-weight: 600;
                         min-width: 100px;
-                        padding: 8px 20px;
+                        padding: 12px 24px;
+                        font-size: 11pt;
                     }
                     QPushButton#embedButton:hover {
                         background-color: #1d4ed8;
@@ -1858,11 +1924,13 @@ class SongEmbedApp(QWidget):
         self.parsed_song_structure = []
         self._clear_verse_buttons()
         self.verse_info_label.setText("")
+        self.verse_info_label.hide()
 
     def _update_verse_info_label(self):
         """Update the label text based on current selection."""
         if not self.parsed_song_structure:
             self.verse_info_label.setText("No verse structure detected — all slides will be embedded")
+            self.verse_info_label.show()
             return
         
         all_checked = all(btn.isChecked() for btn in self.verse_buttons)
@@ -1877,6 +1945,8 @@ class SongEmbedApp(QWidget):
             slide_indices = self._get_selected_slide_indices()
             num_slides = len(slide_indices) if slide_indices else 0
             self.verse_info_label.setText(f"{num_slides} Slide{'s' if num_slides != 1 else ''} selected")
+            
+        self.verse_info_label.show()
 
     def select_first_and_last(self, checked):
         """Toggle verse buttons to select first and last verse if checked, else all verses."""

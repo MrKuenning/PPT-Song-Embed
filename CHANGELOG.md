@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [2.5.0] - 2026-07-13
+
+### Added
+- **Collapsible Master Panel**: Added a toggle button in the bottom status bar to hide/show the Master PowerPoint panel, freeing up space to focus exclusively on the Song Library. The app intelligently shrinks and expands to keep the right edge perfectly anchored on screen without stretching internal components.
+
+### Changed
+- **UI Enhancements**: Cleaned up the layout by repositioning the preview button, reorganizing the target dropdown on the far right, and reordering options checkboxes. Rephrased checkbox labels for better clarity.
+- **Dynamic Layout**: The verse scanning results now have their own line and remain completely hidden until text is available to avoid consuming unnecessary vertical space.
+
+
 ## [2.4.2] - 2026-07-13
 
 ### Changed
