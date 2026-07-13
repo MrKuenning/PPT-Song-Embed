@@ -17,6 +17,10 @@ Designed specifically to work seamlessly with **The Paperless Hymnal**, this too
 - **Appending Blank Slides**: Option to automatically insert a solid blank slide at the end of embedded sections to clean up transitions.
 - **Flexible Options**: Toggle confirmation dialogs, control window "Keep on top" behavior, and auto-remember your preferences across launches.
 
+## Changelog
+
+See the [CHANGELOG.md](CHANGELOG.md) for a detailed history of updates and new features.
+
 ## Quick Start (Run the Executable)
 
 If you just want to run the application without installing Python:
