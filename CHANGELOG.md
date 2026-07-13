@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [2.4.1] - 2026-07-13
+
+### Added
+- **Auto-Update Checker**: Added the ability for the app to check GitHub for a newer version.
+- **Startup Check Toggle**: Added a "Check updates on startup" option (with a 3-second delay to keep startup fast).
+- **Manual Check Button**: Added a "Check for Updates" button at the bottom of the app.
+- **Release Notes Viewer**: A new dialog displays the full release notes for a newly available version and provides a download button.
+
 ## [2.4.0] - 2026-07-10
 
 ### Added

@@ -11,11 +11,15 @@ import os
 import platform
 import re
 import ctypes
+import urllib.request
+import urllib.error
+import json
+import webbrowser
 
 # --- Configuration ---
 APP_NAME = "SongEmbed"
 ORG_NAME = "ChurchMedia"
-APP_VERSION = "2.4.0"
+APP_VERSION = "2.4.1"
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 780
 DEFAULT_FOLDER_TEXT = "No folder selected — click 📂"
@@ -100,9 +104,9 @@ from PyQt6.QtWidgets import (
     QListWidget, QLabel, QFileDialog, QMessageBox, QListWidgetItem,
     QSpacerItem, QSizePolicy, QStyledItemDelegate, QStyle, QCheckBox,
     QComboBox, QGroupBox, QScrollArea, QInputDialog, QSplitter,
-    QTreeWidget, QTreeWidgetItem
+    QTreeWidget, QTreeWidgetItem, QDialog, QTextBrowser
 )
-from PyQt6.QtCore import Qt, QSize, QSettings, QRect, pyqtSignal, QEvent
+from PyQt6.QtCore import Qt, QSize, QSettings, QRect, pyqtSignal, QEvent, QThread, QTimer
 from PyQt6.QtGui import QColor, QIcon, QPainter
 
 # Conditionally import win32com only on Windows
@@ -463,6 +467,85 @@ QLabel#verseInfoLabel {
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Update Checker Classes
+# ─────────────────────────────────────────────────────────────────────────────
+class UpdateCheckThread(QThread):
+    result_ready = pyqtSignal(bool, str, str, str)  # success, version, notes, url
+
+    def run(self):
+        try:
+            req = urllib.request.Request(
+                "https://api.github.com/repos/MrKuenning/PPT-Song-Embed/releases/latest",
+                headers={'User-Agent': f'SongEmbed/{APP_VERSION}'}
+            )
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = json.loads(response.read().decode())
+                
+                tag_name = data.get('tag_name', '')
+                if tag_name.startswith('v'):
+                    tag_name = tag_name[1:]
+                
+                # Compare version numbers (e.g., '2.4.1' vs '2.4.0')
+                is_newer = False
+                if tag_name:
+                    try:
+                        latest_parts = [int(p) for p in tag_name.split('.')]
+                        current_parts = [int(p) for p in APP_VERSION.split('.')]
+                        is_newer = latest_parts > current_parts
+                    except Exception:
+                        # Fallback for non-standard version strings
+                        is_newer = tag_name > APP_VERSION and tag_name != APP_VERSION
+
+                if is_newer:
+                    body = data.get('body', 'No release notes provided.')
+                    html_url = data.get('html_url', '')
+                    self.result_ready.emit(True, tag_name, body, html_url)
+                else:
+                    self.result_ready.emit(True, "", "", "") # Up to date
+        except Exception as e:
+            self.result_ready.emit(False, str(e), "", "")
+
+class UpdateDialog(QDialog):
+    def __init__(self, version, notes, url, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Update Available")
+        self.setMinimumSize(500, 400)
+        self.url = url
+        
+        layout = QVBoxLayout(self)
+        
+        lbl = QLabel(f"A new version of Song Embed (v{version}) is available!")
+        lbl.setStyleSheet("font-size: 11pt; font-weight: bold; color: #e4e4e7;")
+        layout.addWidget(lbl)
+        
+        lbl_notes = QLabel("Release Notes:")
+        lbl_notes.setStyleSheet("color: #a1a1aa;")
+        layout.addWidget(lbl_notes)
+        
+        self.text_browser = QTextBrowser()
+        self.text_browser.setMarkdown(notes)
+        self.text_browser.setStyleSheet("background-color: #1a1a1e; color: #e4e4e7; border: 1px solid #2d2d30;")
+        layout.addWidget(self.text_browser)
+        
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        
+        skip_btn = QPushButton("Remind Me Later")
+        skip_btn.clicked.connect(self.reject)
+        
+        dl_btn = QPushButton("Download Update")
+        dl_btn.setStyleSheet("background-color: #059669; color: #ffffff; font-weight: bold;")
+        dl_btn.clicked.connect(self.download_update)
+        
+        btn_layout.addWidget(skip_btn)
+        btn_layout.addWidget(dl_btn)
+        layout.addLayout(btn_layout)
+        
+    def download_update(self):
+        webbrowser.open(self.url)
+        self.accept()
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Custom delegate to display folder information alongside filename
 # ─────────────────────────────────────────────────────────────────────────────
 class FileItemDelegate(QStyledItemDelegate):
@@ -532,6 +615,10 @@ class SongEmbedApp(QWidget):
         self.load_initial_folder()
         self.refresh_open_ppts()
         self.setAcceptDrops(True)
+        
+        # Start update check if enabled
+        if self.check_updates_cb.isChecked():
+            QTimer.singleShot(3000, self.check_for_updates_auto)
 
     # ── UI Setup ─────────────────────────────────────────────────────────────
 
@@ -676,6 +763,15 @@ class SongEmbedApp(QWidget):
             self.keep_on_top_cb.setChecked(bool(keep_val))
         self.keep_on_top_cb.stateChanged.connect(self.toggle_stay_on_top)
         lib_header.addWidget(self.keep_on_top_cb)
+
+        self.check_updates_cb = QCheckBox("Check updates on startup")
+        updates_val = self.settings.value("check_updates", True)
+        if isinstance(updates_val, str):
+            self.check_updates_cb.setChecked(updates_val.lower() == 'true')
+        else:
+            self.check_updates_cb.setChecked(bool(updates_val))
+        self.check_updates_cb.stateChanged.connect(lambda: self.settings.setValue("check_updates", self.check_updates_cb.isChecked()))
+        lib_header.addWidget(self.check_updates_cb)
 
         right_col.addLayout(lib_header)
 
@@ -861,6 +957,12 @@ class SongEmbedApp(QWidget):
         self.status_label = QLabel("Ready")
         self.status_label.setObjectName("statusLabel")
         bottom_layout.addWidget(self.status_label, 1)
+
+        self.check_updates_btn = QPushButton("Check for Updates")
+        self.check_updates_btn.setObjectName("clearButton")
+        self.check_updates_btn.setToolTip("Check GitHub for a newer version")
+        self.check_updates_btn.clicked.connect(self.check_for_updates_manual)
+        bottom_layout.addWidget(self.check_updates_btn)
 
         self.version_label = QLabel(f"v{APP_VERSION}")
         self.version_label.setObjectName("versionLabel")
@@ -2415,6 +2517,38 @@ class SongEmbedApp(QWidget):
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Entry Point
+    # ── Update Checking ──────────────────────────────────────────────────────
+
+    def check_for_updates_auto(self):
+        """Check for updates in the background automatically on startup."""
+        self.do_update_check(manual=False)
+
+    def check_for_updates_manual(self):
+        """Check for updates triggered by user button press."""
+        self.check_updates_btn.setText("Checking...")
+        self.check_updates_btn.setEnabled(False)
+        self.do_update_check(manual=True)
+
+    def do_update_check(self, manual):
+        self.update_thread = UpdateCheckThread()
+        self.update_thread.result_ready.connect(lambda success, ver, notes, url: self.on_update_result(success, ver, notes, url, manual))
+        self.update_thread.start()
+
+    def on_update_result(self, success, version, notes, url, manual):
+        if manual:
+            self.check_updates_btn.setText("Check for Updates")
+            self.check_updates_btn.setEnabled(True)
+            
+        if success:
+            if version:
+                dialog = UpdateDialog(version, notes, url, self)
+                dialog.exec()
+            elif manual:
+                QMessageBox.information(self, "Up to Date", f"You are running the latest version of Song Embed (v{APP_VERSION}).")
+        else:
+            if manual:
+                QMessageBox.warning(self, "Update Check Failed", f"Could not check for updates:\n{version}")
+
 # ─────────────────────────────────────────────────────────────────────────────
 def main():
     if platform.system() == "Windows":
