@@ -2674,7 +2674,6 @@ def main():
             pass
 
     app = QApplication(sys.argv)
-    import sys, os
     base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
     arrow_path = os.path.join(base_dir, 'down_arrow.png').replace('\\', '/')
     final_stylesheet = DARK_STYLESHEET.replace('url(down_arrow.png)', f'url({arrow_path})')
