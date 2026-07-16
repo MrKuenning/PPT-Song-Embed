@@ -104,7 +104,7 @@ from PyQt6.QtWidgets import (
     QListWidget, QLabel, QFileDialog, QMessageBox, QListWidgetItem,
     QSpacerItem, QSizePolicy, QStyledItemDelegate, QStyle, QCheckBox,
     QComboBox, QGroupBox, QScrollArea, QInputDialog, QSplitter,
-    QTreeWidget, QTreeWidgetItem, QDialog, QTextBrowser
+    QTreeWidget, QTreeWidgetItem, QDialog, QTextBrowser, QProgressDialog
 )
 from PyQt6.QtCore import Qt, QSize, QSettings, QRect, pyqtSignal, QEvent, QThread, QTimer
 from PyQt6.QtGui import QColor, QIcon, QPainter
@@ -476,7 +476,7 @@ QLabel#verseInfoLabel {
 # Update Checker Classes
 # ─────────────────────────────────────────────────────────────────────────────
 class UpdateCheckThread(QThread):
-    result_ready = pyqtSignal(bool, str, str, str)  # success, version, notes, url
+    result_ready = pyqtSignal(bool, str, str, str, str)  # success, version, notes, html_url, download_url
 
     def run(self):
         try:
@@ -505,18 +505,61 @@ class UpdateCheckThread(QThread):
                 if is_newer:
                     body = data.get('body', 'No release notes provided.')
                     html_url = data.get('html_url', '')
-                    self.result_ready.emit(True, tag_name, body, html_url)
+                    download_url = ""
+                    assets = data.get('assets', [])
+                    for asset in assets:
+                        if asset.get('name', '').lower().endswith('.exe'):
+                            download_url = asset.get('browser_download_url', '')
+                            break
+                    
+                    self.result_ready.emit(True, tag_name, body, html_url, download_url)
                 else:
-                    self.result_ready.emit(True, "", "", "") # Up to date
+                    self.result_ready.emit(True, "", "", "", "") # Up to date
         except Exception as e:
-            self.result_ready.emit(False, str(e), "", "")
+            self.result_ready.emit(False, str(e), "", "", "")
+
+class DownloadThread(QThread):
+    progress = pyqtSignal(int)
+    finished_download = pyqtSignal(bool, str) # success, file_path_or_error
+
+    def __init__(self, url, target_path):
+        super().__init__()
+        self.url = url
+        self.target_path = target_path
+
+    def run(self):
+        try:
+            req = urllib.request.Request(self.url, headers={'User-Agent': f'SongEmbed/{APP_VERSION}'})
+            with urllib.request.urlopen(req, timeout=10) as response, open(self.target_path, 'wb') as out_file:
+                total_length = response.info().get('Content-Length')
+                if total_length is not None:
+                    total_length = int(total_length)
+                
+                downloaded = 0
+                chunk_size = 16384
+                
+                while True:
+                    buffer = response.read(chunk_size)
+                    if not buffer:
+                        break
+                    out_file.write(buffer)
+                    downloaded += len(buffer)
+                    if total_length:
+                        percent = int((downloaded / total_length) * 100)
+                        self.progress.emit(percent)
+                        
+            self.finished_download.emit(True, self.target_path)
+        except Exception as e:
+            self.finished_download.emit(False, str(e))
 
 class UpdateDialog(QDialog):
-    def __init__(self, version, notes, url, parent=None):
+    def __init__(self, version, notes, html_url, download_url, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Update Available")
         self.setMinimumSize(500, 400)
-        self.url = url
+        self.html_url = html_url
+        self.download_url = download_url
+        self.version = version
         
         layout = QVBoxLayout(self)
         
@@ -536,20 +579,69 @@ class UpdateDialog(QDialog):
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         
-        skip_btn = QPushButton("Remind Me Later")
-        skip_btn.clicked.connect(self.reject)
+        self.skip_btn = QPushButton("Remind Me Later")
+        self.skip_btn.clicked.connect(self.reject)
         
-        dl_btn = QPushButton("Download Update")
-        dl_btn.setStyleSheet("background-color: #059669; color: #ffffff; font-weight: bold;")
-        dl_btn.clicked.connect(self.download_update)
+        self.web_btn = QPushButton("Open Webpage")
+        self.web_btn.clicked.connect(self.open_webpage)
         
-        btn_layout.addWidget(skip_btn)
-        btn_layout.addWidget(dl_btn)
+        btn_layout.addWidget(self.skip_btn)
+        btn_layout.addWidget(self.web_btn)
+        
+        if self.download_url:
+            self.dl_btn = QPushButton("Direct Download .EXE")
+            self.dl_btn.setStyleSheet("background-color: #059669; color: #ffffff; font-weight: bold;")
+            self.dl_btn.clicked.connect(self.download_exe)
+            btn_layout.addWidget(self.dl_btn)
+        else:
+            self.web_btn.setStyleSheet("background-color: #059669; color: #ffffff; font-weight: bold;")
+
         layout.addLayout(btn_layout)
         
-    def download_update(self):
-        webbrowser.open(self.url)
+    def open_webpage(self):
+        webbrowser.open(self.html_url)
         self.accept()
+
+    def download_exe(self):
+        base_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+        target_path = os.path.join(base_dir, f"SongEmbed_v{self.version}.exe")
+        
+        self.skip_btn.setEnabled(False)
+        self.web_btn.setEnabled(False)
+        self.dl_btn.setEnabled(False)
+        self.dl_btn.setText("Downloading...")
+        
+        self.progress_dialog = QProgressDialog("Downloading update...", "Cancel", 0, 100, self)
+        self.progress_dialog.setWindowTitle("Downloading")
+        self.progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        self.progress_dialog.setMinimumDuration(0)
+        self.progress_dialog.canceled.connect(self.cancel_download)
+        
+        self.download_thread = DownloadThread(self.download_url, target_path)
+        self.download_thread.progress.connect(self.progress_dialog.setValue)
+        self.download_thread.finished_download.connect(self.on_download_finished)
+        self.download_thread.start()
+
+    def cancel_download(self):
+        if hasattr(self, 'download_thread'):
+            self.download_thread.terminate()
+            self.download_thread.wait()
+        self.skip_btn.setEnabled(True)
+        self.web_btn.setEnabled(True)
+        if hasattr(self, 'dl_btn'):
+            self.dl_btn.setEnabled(True)
+            self.dl_btn.setText("Direct Download .EXE")
+
+    def on_download_finished(self, success, result):
+        if not self.progress_dialog.wasCanceled():
+            self.progress_dialog.close()
+        
+        if success:
+            QMessageBox.information(self, "Download Complete", f"Update downloaded successfully to:\n{result}\n\nPlease close this application and run the new version.")
+            self.accept()
+        else:
+            QMessageBox.warning(self, "Download Failed", f"Failed to download the update:\n{result}")
+            self.cancel_download()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Custom delegate to display folder information alongside filename
@@ -2735,17 +2827,17 @@ class SongEmbedApp(QWidget):
 
     def do_update_check(self, manual):
         self.update_thread = UpdateCheckThread()
-        self.update_thread.result_ready.connect(lambda success, ver, notes, url: self.on_update_result(success, ver, notes, url, manual))
+        self.update_thread.result_ready.connect(lambda success, ver, notes, html_url, dl_url: self.on_update_result(success, ver, notes, html_url, dl_url, manual))
         self.update_thread.start()
 
-    def on_update_result(self, success, version, notes, url, manual):
+    def on_update_result(self, success, version, notes, html_url, download_url, manual):
         if manual:
             self.check_updates_btn.setText("Check for Updates")
             self.check_updates_btn.setEnabled(True)
             
         if success:
             if version:
-                dialog = UpdateDialog(version, notes, url, self)
+                dialog = UpdateDialog(version, notes, html_url, download_url, self)
                 dialog.exec()
             elif manual:
                 QMessageBox.information(self, "Up to Date", f"You are running the latest version of Song Embed (v{APP_VERSION}).")
@@ -2764,10 +2856,7 @@ def main():
             pass
 
     app = QApplication(sys.argv)
-    base_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-    arrow_path = os.path.join(base_dir, 'down_arrow.png').replace('\\', '/')
-    final_stylesheet = DARK_STYLESHEET.replace('url(down_arrow.png)', f'url({arrow_path})')
-    app.setStyleSheet(final_stylesheet)
+    app.setStyleSheet(DARK_STYLESHEET)
     window = SongEmbedApp()
     window.show()
     sys.exit(app.exec())

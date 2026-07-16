@@ -5,6 +5,7 @@
 ### Added
 - **Settings Dialog**: Moved configuration checkboxes and folder selection into a dedicated modal Settings menu accessible via a gear icon. Added a second version indicator and manual update check to the settings screen.
 - **Auto Blank Slide**: Automatically add a blank slide to the beginning and end of a new section when using "Auto New Section" on an empty presentation, ensuring the show starts on a blank slide.
+- **In-App Updater**: Added a "Direct Download .EXE" button to the update dialog that securely downloads the new release executable alongside your current app version without needing to visit the GitHub website.
 
 ### Changed
 - **Auto New Section Embed Mode**: Enabled the Embed button for "Auto New Section" mode even when no section is selected. Clicking "Add New Section" dynamically appends to the end of the presentation.
