@@ -19,7 +19,7 @@ import webbrowser
 # --- Configuration ---
 APP_NAME = "SongEmbed"
 ORG_NAME = "ChurchMedia"
-APP_VERSION = "2.5.1"
+APP_VERSION = "2.6.0"
 WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 780
 DEFAULT_FOLDER_TEXT = "No folder selected — click 📂"
@@ -310,7 +310,7 @@ QComboBox::drop-down {
     padding-right: 10px;
 }
 QComboBox::down-arrow {
-    image: url(down_arrow.png);
+    image: url("SONGEMBED_ARROW_PATH");
     width: 12px;
     height: 12px;
 }
@@ -770,6 +770,51 @@ class SongEmbedApp(QWidget):
         self.keep_on_top_cb.stateChanged.connect(self.toggle_stay_on_top)
         lib_header.addWidget(self.keep_on_top_cb)
 
+        self.settings_btn = QPushButton("⚙")
+        self.settings_btn.setToolTip("Settings")
+        self.settings_btn.setFixedWidth(30)
+        self.settings_btn.clicked.connect(self.open_settings)
+        lib_header.addWidget(self.settings_btn)
+
+        right_col.addLayout(lib_header)
+
+        # ── Settings Dialog Setup ──
+        self.settings_dialog = QDialog(self)
+        self.settings_dialog.setWindowTitle("Settings")
+        self.settings_dialog.setMinimumWidth(450)
+        settings_layout = QVBoxLayout(self.settings_dialog)
+
+        folder_group = QGroupBox("Song Library")
+        folder_layout = QVBoxLayout(folder_group)
+        self.folder_label = QLabel(DEFAULT_FOLDER_TEXT)
+        self.folder_label.setObjectName("folderLabel")
+        self.folder_label.setWordWrap(True)
+
+        folder_btn_layout = QHBoxLayout()
+        self.folder_btn = QPushButton("📂 Browse Folder...")
+        self.folder_btn.setToolTip("Select folder containing song PPTs")
+        self.folder_btn.clicked.connect(self.select_folder)
+
+        folder_btn_layout.addWidget(self.folder_btn)
+        folder_btn_layout.addStretch()
+
+        folder_layout.addWidget(self.folder_label)
+        folder_layout.addLayout(folder_btn_layout)
+        settings_layout.addWidget(folder_group)
+
+        options_group = QGroupBox("General Options")
+        settings_opts_layout = QVBoxLayout(options_group)
+
+        self.replace_cb = QCheckBox("Replace Content")
+        replace_val = self.settings.value("replace_existing", True)
+        self.replace_cb.setChecked(str(replace_val).lower() == 'true' if isinstance(replace_val, str) else bool(replace_val))
+        self.replace_cb.stateChanged.connect(lambda: self.settings.setValue("replace_existing", self.replace_cb.isChecked()))
+
+        self.insert_blank_cb = QCheckBox("Add Blank Slide")
+        blank_val = self.settings.value("insert_blank", True)
+        self.insert_blank_cb.setChecked(str(blank_val).lower() == 'true' if isinstance(blank_val, str) else bool(blank_val))
+        self.insert_blank_cb.stateChanged.connect(lambda: self.settings.setValue("insert_blank", self.insert_blank_cb.isChecked()))
+
         self.check_updates_cb = QCheckBox("Check updates on startup")
         updates_val = self.settings.value("check_updates", True)
         if isinstance(updates_val, str):
@@ -777,36 +822,47 @@ class SongEmbedApp(QWidget):
         else:
             self.check_updates_cb.setChecked(bool(updates_val))
         self.check_updates_cb.stateChanged.connect(lambda: self.settings.setValue("check_updates", self.check_updates_cb.isChecked()))
-        lib_header.addWidget(self.check_updates_cb)
 
-        right_col.addLayout(lib_header)
+        settings_opts_layout.addWidget(self.replace_cb)
+        settings_opts_layout.addWidget(self.insert_blank_cb)
+        settings_opts_layout.addWidget(self.check_updates_cb)
+        settings_layout.addWidget(options_group)
 
-        folder_row = QHBoxLayout()
-        folder_row.setSpacing(8)
+        close_btn_layout = QHBoxLayout()
+        
+        self.settings_version_label = QLabel(f"v{APP_VERSION}")
+        self.settings_version_label.setObjectName("versionLabel")
+        self.settings_version_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        
+        self.settings_check_updates_btn = QPushButton("Check for Updates")
+        self.settings_check_updates_btn.setObjectName("clearButton")
+        self.settings_check_updates_btn.setToolTip("Check GitHub for a newer version")
+        self.settings_check_updates_btn.clicked.connect(self.check_for_updates_manual)
 
-        self.folder_label = QLabel(DEFAULT_FOLDER_TEXT)
-        self.folder_label.setObjectName("folderLabel")
-        self.folder_label.setWordWrap(True)
+        close_btn_layout.addWidget(self.settings_version_label)
+        close_btn_layout.addWidget(self.settings_check_updates_btn)
+        
+        close_btn_layout.addStretch()
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.settings_dialog.accept)
+        close_btn_layout.addWidget(close_btn)
+        settings_layout.addLayout(close_btn_layout)
 
-        self.folder_btn = QPushButton("📂")
-        self.folder_btn.setToolTip("Select folder containing song PPTs")
-        self.folder_btn.setFixedWidth(40)
-        self.folder_btn.clicked.connect(self.select_folder)
-
-        self.inject_one_off_btn = QPushButton("Select single file")
-        self.inject_one_off_btn.setToolTip("Select or drag & drop a PPT file anywhere here")
-        self.inject_one_off_btn.clicked.connect(self.inject_one_off)
-
-        folder_row.addWidget(self.folder_label, 1)
-        folder_row.addWidget(self.folder_btn)
-        folder_row.addWidget(self.inject_one_off_btn)
-        right_col.addLayout(folder_row)
+        search_row = QHBoxLayout()
+        search_row.setSpacing(8)
 
         self.search_box = QLineEdit()
         self.search_box.setPlaceholderText("🔍  Search songs by name…")
         self.search_box.textChanged.connect(self.filter_files)
         self.search_box.returnPressed.connect(self.select_first_match)
-        right_col.addWidget(self.search_box)
+        
+        self.inject_one_off_btn = QPushButton("Browse File")
+        self.inject_one_off_btn.setToolTip("Select or drag & drop a PPT file anywhere here")
+        self.inject_one_off_btn.clicked.connect(self.inject_one_off)
+        
+        search_row.addWidget(self.search_box)
+        search_row.addWidget(self.inject_one_off_btn)
+        right_col.addLayout(search_row)
 
         self.file_list = QListWidget()
         self.file_list.setAlternatingRowColors(True)
@@ -931,16 +987,6 @@ class SongEmbedApp(QWidget):
         options_row = QHBoxLayout()
         options_row.setSpacing(12)
 
-        self.replace_cb = QCheckBox("Replace Content")
-        replace_val = self.settings.value("replace_existing", True)
-        self.replace_cb.setChecked(str(replace_val).lower() == 'true' if isinstance(replace_val, str) else bool(replace_val))
-        self.replace_cb.stateChanged.connect(lambda: self.settings.setValue("replace_existing", self.replace_cb.isChecked()))
-
-        self.insert_blank_cb = QCheckBox("Add Blank Slide")
-        blank_val = self.settings.value("insert_blank", True)
-        self.insert_blank_cb.setChecked(str(blank_val).lower() == 'true' if isinstance(blank_val, str) else bool(blank_val))
-        self.insert_blank_cb.stateChanged.connect(lambda: self.settings.setValue("insert_blank", self.insert_blank_cb.isChecked()))
-        
         self.require_confirm_cb = QCheckBox("Confirmation")
         confirm_val = self.settings.value("require_confirm", True)
         self.require_confirm_cb.setChecked(str(confirm_val).lower() == 'true' if isinstance(confirm_val, str) else bool(confirm_val))
@@ -952,8 +998,6 @@ class SongEmbedApp(QWidget):
         self.auto_append_cb.stateChanged.connect(lambda: self.settings.setValue("auto_append", self.auto_append_cb.isChecked()))
         self.auto_append_cb.stateChanged.connect(self.update_embed_state)
 
-        options_row.addWidget(self.replace_cb)
-        options_row.addWidget(self.insert_blank_cb)
         options_row.addWidget(self.require_confirm_cb)
         options_row.addWidget(self.auto_append_cb)
         options_row.addStretch()
@@ -1016,8 +1060,22 @@ class SongEmbedApp(QWidget):
         return super().eventFilter(source, event)
 
     def apply_dark_theme(self):
-        self.setStyleSheet(DARK_STYLESHEET)
-        QApplication.instance().setStyleSheet(DARK_STYLESHEET)
+        import tempfile
+        import base64
+        arrow_base64 = b"iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAAOUlEQVR4nGNgGPqAEcZYuHDVf0KK4+PDGJmQOYQUMzAwMDBhE8SlGEMDMQBDA7othJwKB8QEAm0AAJ0jDXM9WGTXAAAAAElFTkSuQmCC"
+        arrow_path = os.path.join(tempfile.gettempdir(), "songembed_down_arrow.png")
+        try:
+            with open(arrow_path, "wb") as f:
+                f.write(base64.b64decode(arrow_base64))
+        except Exception:
+            pass
+            
+        css = DARK_STYLESHEET.replace("SONGEMBED_ARROW_PATH", arrow_path.replace("\\", "/"))
+        self.setStyleSheet(css)
+        QApplication.instance().setStyleSheet(css)
+
+    def open_settings(self):
+        self.settings_dialog.exec()
 
     # ── Stay‐on‐top ─────────────────────────────────────────────────────────
 
@@ -1669,43 +1727,51 @@ class SongEmbedApp(QWidget):
         has_master = bool(self.master_full_name)
         has_target = (self.target_combo.currentIndex() >= 0 and
                       self.target_combo.currentData() is not None)
+                      
+        auto_append = self.auto_append_cb.isChecked()
 
         self.preview_btn.setEnabled(has_song)
         self.scan_verses_btn.setEnabled(has_song)
-        self.embed_btn.setEnabled(has_song and has_master and has_target)
+        
+        can_embed = has_song and has_master and (has_target or auto_append)
+        self.embed_btn.setEnabled(can_embed)
         
         # Update text and styling of embed button based on auto section mode
-        if has_target:
-            target_name = self.target_combo.currentText()
-            if self.auto_append_cb.isChecked():
+        if auto_append:
+            if has_target:
+                target_name = self.target_combo.currentText()
                 self.embed_btn.setText(f'Add New Section After "{target_name}"')
-                self.embed_btn.setStyleSheet("""
-                    QPushButton#embedButton {
-                        background-color: #2563eb;
-                        color: #ffffff;
-                        border: 1px solid #2d4373;
-                        font-weight: 600;
-                        min-width: 100px;
-                        padding: 12px 24px;
-                        font-size: 11pt;
-                    }
-                    QPushButton#embedButton:hover {
-                        background-color: #2d4373;
-                    }
-                    QPushButton#embedButton:pressed {
-                        background-color: #233352;
-                    }
-                    QPushButton#embedButton:disabled {
-                        background-color: #1e3a8a;
-                        color: #233352;
-                        border-color: #1e3a8a;
-                    }
-                """)
             else:
-                self.embed_btn.setText(f'Embed in Section "{target_name}"')
-                self.embed_btn.setStyleSheet("")
+                self.embed_btn.setText('Add New Section')
+                
+            self.embed_btn.setStyleSheet("""
+                QPushButton#embedButton {
+                    background-color: #2563eb;
+                    color: #ffffff;
+                    border: 1px solid #2d4373;
+                    font-weight: 600;
+                    min-width: 100px;
+                    padding: 12px 24px;
+                    font-size: 11pt;
+                }
+                QPushButton#embedButton:hover {
+                    background-color: #2d4373;
+                }
+                QPushButton#embedButton:pressed {
+                    background-color: #233352;
+                }
+                QPushButton#embedButton:disabled {
+                    background-color: #1e3a8a;
+                    color: #233352;
+                    border-color: #1e3a8a;
+                }
+            """)
         else:
-            self.embed_btn.setText("📥 Embed")
+            if has_target:
+                target_name = self.target_combo.currentText()
+                self.embed_btn.setText(f'Embed in Section "{target_name}"')
+            else:
+                self.embed_btn.setText("📥 Embed")
             self.embed_btn.setStyleSheet("")
 
     # ── Preview Logic ────────────────────────────────────────────────────────
@@ -2116,12 +2182,17 @@ class SongEmbedApp(QWidget):
         if not song_path:
             return
 
+        auto_append = self.auto_append_cb.isChecked()
         target_data = self.target_combo.currentData()
-        if not target_data:
+        
+        if not auto_append and not target_data:
             self.set_status("No target section selected", error=True)
             return
 
-        section_idx, section_name = target_data
+        section_idx = -1
+        section_name = ""
+        if target_data:
+            section_idx, section_name = target_data
 
         if not os.path.exists(song_path):
             self.set_status(f"Song file not found: {song_path}", error=True)
@@ -2146,7 +2217,6 @@ class SongEmbedApp(QWidget):
             verse_info = ""
 
         # ── Auto Append mode ──
-        auto_append = self.auto_append_cb.isChecked()
         if auto_append:
             pres = self._get_master_pres()
             if not pres:
@@ -2168,8 +2238,11 @@ class SongEmbedApp(QWidget):
                     return
 
             try:
-                # Insert the new section right after the currently selected section
-                insert_at = section_idx + 1
+                # Insert the new section right after the currently selected section, or at the end if none selected
+                if section_idx >= 0:
+                    insert_at = section_idx + 1
+                else:
+                    insert_at = sp.Count + 1
                 sp.AddSection(insert_at, new_section_name)
                 print(f"Auto-appended section '{new_section_name}' at index {insert_at}")
             except Exception as e:
@@ -2182,7 +2255,8 @@ class SongEmbedApp(QWidget):
             insert_blank = self.insert_blank_cb.isChecked()
             success, inserted = self.do_embed(
                 song_path, song_filename, new_section_name,
-                replace=False, insert_blank=insert_blank, slide_indices=slide_indices
+                replace=False, insert_blank=insert_blank, slide_indices=slide_indices,
+                is_auto_append=True
             )
 
             if success:
@@ -2247,7 +2321,7 @@ class SongEmbedApp(QWidget):
 
             self.update_embed_state()
 
-    def do_embed(self, song_path, song_filename, section_name, replace, insert_blank, keep_source_formatting=False, slide_indices=None):
+    def do_embed(self, song_path, song_filename, section_name, replace, insert_blank, keep_source_formatting=False, slide_indices=None, is_auto_append=False):
         """
         Core embed logic: insert slides from song_path into the named section
         of the master presentation.
@@ -2295,6 +2369,17 @@ class SongEmbedApp(QWidget):
                 insert_idx = 0
                 for i in range(1, target_idx):
                     insert_idx += sp.SlidesCount(i)
+
+            # ── Insert Front Blank Slide if Empty & Auto Append ──
+            front_blank_added = False
+            if is_auto_append and total_before == 0 and insert_blank:
+                new_slide = pres.Slides.Add(1, 12)  # 12 is ppLayoutBlank
+                new_slide.FollowMasterBackground = False
+                new_slide.Background.Fill.Solid()
+                new_slide.Background.Fill.ForeColor.RGB = 0  # Black
+                insert_idx += 1
+                total_before += 1
+                front_blank_added = True
 
             # Insert slides
             blank_added = False
@@ -2396,6 +2481,8 @@ class SongEmbedApp(QWidget):
                     # Clean up the blank slide if nothing else was inserted
                     if blank_added and inserted_count == 1:
                         pres.Slides(insert_from + 1).Delete()
+                    if front_blank_added:
+                        pres.Slides(1).Delete()
                     return False, 0
 
             # Delete old slides and fix up section assignment
@@ -2414,12 +2501,15 @@ class SongEmbedApp(QWidget):
             else:
                 # If the section was completely empty, slides were inserted into the previous section.
                 # Move them to the target section in reverse order to preserve their sequence.
-                for i in range(inserted_count, 0, -1):
-                    pres.Slides(insert_idx + i).MoveToSectionStart(target_idx)
+                # Unless we added a front blank slide to an empty presentation, in which case they are already in the correct section natively.
+                if not front_blank_added:
+                    for i in range(inserted_count, 0, -1):
+                        pres.Slides(insert_idx + i).MoveToSectionStart(target_idx)
 
-            print(f"Embedded {inserted_count} slides from '{song_filename}' into '{section_name}'. "
+            final_inserted = inserted_count + (1 if front_blank_added else 0)
+            print(f"Embedded {final_inserted} slides from '{song_filename}' into '{section_name}'. "
                   f"Removed {existing_count} old slide(s).")
-            return True, inserted_count
+            return True, final_inserted
 
         except Exception as e:
             self.set_status(f"Embed failed: {e}", error=True)

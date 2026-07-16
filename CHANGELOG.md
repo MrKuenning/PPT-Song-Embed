@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [2.6.0] - 2026-07-15
+
+### Added
+- **Settings Dialog**: Moved configuration checkboxes and folder selection into a dedicated modal Settings menu accessible via a gear icon. Added a second version indicator and manual update check to the settings screen.
+- **Auto Blank Slide**: Automatically add a blank slide to the beginning and end of a new section when using "Auto New Section" on an empty presentation, ensuring the show starts on a blank slide.
+
+### Changed
+- **Auto New Section Embed Mode**: Enabled the Embed button for "Auto New Section" mode even when no section is selected. Clicking "Add New Section" dynamically appends to the end of the presentation.
+- **Select File Button**: Moved the "Select single file" button out of the settings window and placed it next to the search box, renaming it to "Browse File".
+
+### Fixed
+- **Dropdown Arrow Rendering**: Replaced the external PNG dropdown arrow with an embedded base64 image generated dynamically at runtime to ensure the arrow renders reliably when the app is compiled with PyInstaller.
+
 ## [2.5.1] - 2026-07-13
 
 ### Changed
